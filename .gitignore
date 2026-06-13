@@ -1,0 +1,23 @@
+# База даних SQLite (перенесена в PostgreSQL)
+wandr.db
+*.db
+
+# Змінні середовища
+.env
+.env.local
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+venv/
+.venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Тимчасові файли
+*.log

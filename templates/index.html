@@ -1,0 +1,416 @@
+﻿<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Travel Planner</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+  <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.min.js"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+</head>
+<body>
+
+<!-- Welcome / Auth page -->
+<div id="pageWelcome">
+  <div class="welcome-inner">
+    <div class="welcome-eyebrow">AI · Travel Planner</div>
+    <h1 class="welcome-title">Відкрий свій<br><em>ідеальний маршрут</em></h1>
+    <p class="welcome-sub">Персоналізований планувальник подорожей на основі штучного інтелекту — погода, готелі, маршрути по днях</p>
+
+    <div class="welcome-auth-box" id="welcomeAuthBox">
+      <div class="welcome-auth-tabs">
+        <button class="welcome-auth-tab active" id="wtabLogin" onclick="switchWelcomeTab('login')">Вхід</button>
+        <button class="welcome-auth-tab" id="wtabRegister" onclick="switchWelcomeTab('register')">Реєстрація</button>
+      </div>
+      <div class="auth-error" id="welcomeError"></div>
+      <div class="auth-success" id="welcomeSuccess"></div>
+
+      <!-- Welcome Login -->
+      <form class="auth-form" id="welcomeLoginForm" onsubmit="submitWelcomeLogin(event)">
+        <div class="field"><label>Email</label><input type="email" id="wLoginEmail" placeholder="your@email.com" required></div>
+        <div class="field"><label>Пароль</label><input type="password" id="wLoginPassword" placeholder="••••••••" required></div>
+        <button type="submit" class="btn-generate"><span>Увійти</span></button>
+        <button type="button" class="auth-link-btn" onclick="switchWelcomeTab('forgot')">Забули пароль?</button>
+      </form>
+
+      <!-- Welcome Register -->
+      <form class="auth-form" id="welcomeRegisterForm" style="display:none" onsubmit="submitWelcomeRegister(event)">
+        <div class="field"><label>Ім'я</label><input type="text" id="wRegName" placeholder="Ваше ім'я" required></div>
+        <div class="field"><label>Email</label><input type="email" id="wRegEmail" placeholder="your@email.com" required></div>
+        <div class="field">
+          <label>Пароль</label>
+          <input type="password" id="wRegPassword" placeholder="Мінімум 8 символів" required oninput="checkPasswordStrength(this.value,'w')">
+          <div class="pwd-strength-bar"><div id="pwdStrengthFillW"></div></div>
+          <div class="pwd-hints" id="pwdHintsW">
+            <span class="pwd-hint" id="hintLenW">✗ Мінімум 8 символів</span>
+            <span class="pwd-hint" id="hintUpperW">✗ Велика літера (A–Z)</span>
+            <span class="pwd-hint" id="hintNumW">✗ Цифра (0–9)</span>
+            <span class="pwd-hint" id="hintSpecialW">✗ Спецсимвол (!@#$...)</span>
+          </div>
+        </div>
+        <div class="field">
+          <label>Підтвердження пароля</label>
+          <input type="password" id="wRegPasswordConfirm" placeholder="Повторіть пароль" required oninput="checkPasswordMatch('w')">
+          <div class="pwd-match-msg" id="pwdMatchMsgW"></div>
+        </div>
+        <button type="submit" class="btn-generate"><span>Створити акаунт</span></button>
+      </form>
+
+      <!-- Welcome Forgot -->
+      <form class="auth-form" id="welcomeForgotForm" style="display:none" onsubmit="submitWelcomeForgot(event)">
+        <p style="font-size:0.82rem;color:var(--mist);margin-bottom:1rem;">Введи свій email — ми надішлемо посилання для відновлення пароля.</p>
+        <div class="field"><label>Email</label><input type="email" id="wForgotEmail" placeholder="your@email.com" required></div>
+        <button type="submit" class="btn-generate"><span>Надіслати посилання</span></button>
+        <button type="button" class="auth-link-btn" onclick="switchWelcomeTab('login')">← Назад до входу</button>
+      </form>
+
+      <!-- Welcome Reset -->
+      <form class="auth-form" id="welcomeResetForm" style="display:none" onsubmit="submitReset(event)">
+        <p style="font-size:0.82rem;color:var(--mist);margin-bottom:1rem;">Введи новий пароль для свого акаунта.</p>
+        <div class="field">
+          <label>Новий пароль</label>
+          <input type="password" id="resetPassword" placeholder="Мінімум 8 символів" required oninput="checkPasswordStrength(this.value,'reset')">
+          <div class="pwd-strength-bar"><div id="pwdStrengthFillReset"></div></div>
+          <div class="pwd-hints" id="pwdHintsReset">
+            <span class="pwd-hint" id="hintLenR">✗ Мінімум 8 символів</span>
+            <span class="pwd-hint" id="hintUpperR">✗ Велика літера (A–Z)</span>
+            <span class="pwd-hint" id="hintNumR">✗ Цифра (0–9)</span>
+          </div>
+        </div>
+        <div class="field">
+          <label>Підтвердження пароля</label>
+          <input type="password" id="resetPasswordConfirm" placeholder="Повторіть пароль" required oninput="checkPasswordMatch('reset')">
+          <div class="pwd-match-msg" id="pwdMatchMsgReset"></div>
+        </div>
+        <button type="submit" class="btn-generate"><span>Зберегти пароль</span></button>
+      </form>
+    </div>
+
+    <!-- Onboarding interest survey (shown after registration) -->
+    <div id="welcomeOnboarding" class="welcome-onboarding" style="display:none">
+      <div class="onboarding-greeting" id="onboardingGreeting">Ласкаво просимо!</div>
+      <p class="onboarding-sub">Оберіть теми, які найбільше цікавлять вас у подорожах — ми підберемо маршрути саме для вас.</p>
+      <div class="interests-grid onboarding-interests-grid" id="onboardingInterestGrid">
+        <span class="interest-tag" data-value="їжа">🍽 Їжа</span>
+        <span class="interest-tag" data-value="архітектура">🏛 Архітектура</span>
+        <span class="interest-tag" data-value="природа">🌿 Природа</span>
+        <span class="interest-tag" data-value="культура">🎭 Культура</span>
+        <span class="interest-tag" data-value="пригоди">🧗 Пригоди</span>
+        <span class="interest-tag" data-value="пляж">🏖 Пляж</span>
+        <span class="interest-tag" data-value="шопінг">🛍 Шопінг</span>
+        <span class="interest-tag" data-value="мистецтво">🎨 Мистецтво</span>
+      </div>
+      <div class="onboarding-actions">
+        <button class="btn-generate" id="onboardingSaveBtn" onclick="saveOnboardingInterests()"><span>Знайти маршрути</span></button>
+        <button type="button" class="auth-link-btn" onclick="skipOnboarding()">Пропустити</button>
+      </div>
+    </div>
+
+    <div class="demo-divider"><span>або</span></div>
+    <button class="btn-demo" onclick="loadDemoRoute()">Переглянути демо маршрут</button>
+  </div>
+</div>
+
+<div class="container">
+
+  <header>
+    <div class="logo">Travel <em>AI</em></div>
+    <div class="tagline">Персоналізовані маршрути</div>
+    <div class="header-auth" id="headerAuth">
+      <button class="btn-auth" onclick="openAuth('login')">Увійти</button>
+      <button class="btn-auth primary" onclick="openAuth('register')">Реєстрація</button>
+    </div>
+  </header>
+
+  <!-- Auth Modal -->
+  <div class="modal-overlay" id="authModal" onclick="if(event.target===this)closeAuth()">
+    <div class="modal">
+      <button class="modal-close" onclick="closeAuth()">✕</button>
+      <div class="modal-title" id="modalTitle">Увійти</div>
+      <div class="modal-sub">ДОСТУП ДО АКАУНТА</div>
+      <div class="auth-tabs" id="authTabs">
+        <button class="auth-tab active" id="tabLogin" onclick="switchAuthTab('login')">Вхід</button>
+        <button class="auth-tab" id="tabRegister" onclick="switchAuthTab('register')">Реєстрація</button>
+      </div>
+      <div class="auth-error" id="authError"></div>
+      <div class="auth-success" id="authSuccess"></div>
+
+      <!-- Login -->
+      <form class="auth-form" id="loginForm" onsubmit="submitLogin(event)">
+        <div class="field"><label>Email</label><input type="email" id="loginEmail" placeholder="your@email.com" required></div>
+        <div class="field"><label>Пароль</label><input type="password" id="loginPassword" placeholder="••••••••" required></div>
+        <button type="submit" class="btn-generate"><span>Увійти</span></button>
+        <button type="button" class="auth-link-btn" onclick="switchAuthTab('forgot')">Забули пароль?</button>
+      </form>
+
+      <!-- Register -->
+      <form class="auth-form" id="registerForm" style="display:none" onsubmit="submitRegister(event)">
+        <div class="field"><label>Ім'я</label><input type="text" id="regName" placeholder="Ваше ім'я" required></div>
+        <div class="field"><label>Email</label><input type="email" id="regEmail" placeholder="your@email.com" required></div>
+        <div class="field">
+          <label>Пароль</label>
+          <input type="password" id="regPassword" placeholder="Мінімум 8 символів" required oninput="checkPasswordStrength(this.value)">
+          <div class="pwd-strength-bar"><div id="pwdStrengthFill"></div></div>
+          <div class="pwd-hints" id="pwdHints">
+            <span class="pwd-hint" id="hintLen">✗ Мінімум 8 символів</span>
+            <span class="pwd-hint" id="hintUpper">✗ Велика літера (A–Z)</span>
+            <span class="pwd-hint" id="hintNum">✗ Цифра (0–9)</span>
+            <span class="pwd-hint" id="hintSpecial">✗ Спецсимвол (!@#$...)</span>
+          </div>
+        </div>
+        <div class="field">
+          <label>Підтвердження пароля</label>
+          <input type="password" id="regPasswordConfirm" placeholder="Повторіть пароль" required oninput="checkPasswordMatch()">
+          <div class="pwd-match-msg" id="pwdMatchMsg"></div>
+        </div>
+        <button type="submit" class="btn-generate" id="regSubmitBtn"><span>Створити акаунт</span></button>
+      </form>
+
+      <!-- Forgot password -->
+      <form class="auth-form" id="forgotForm" style="display:none" onsubmit="submitForgot(event)">
+        <p style="font-family:'DM Mono',monospace;font-size:0.65rem;color:var(--mist);margin-bottom:1rem;">Введи свій email — ми надішлемо посилання для відновлення пароля.</p>
+        <div class="field"><label>Email</label><input type="email" id="forgotEmail" placeholder="your@email.com" required></div>
+        <button type="submit" class="btn-generate"><span>Надіслати посилання</span></button>
+        <button type="button" class="auth-link-btn" onclick="switchAuthTab('login')">← Назад до входу</button>
+      </form>
+
+      <!-- Reset handled on welcome page -->
+    </div>
+  </div>
+
+  <!-- Route Preview Modal -->
+  <div class="route-preview-overlay" id="routePreviewModal" onclick="if(event.target===this)closeRoutePreview()">
+    <div class="route-preview-modal">
+      <button class="modal-close" onclick="closeRoutePreview()">✕</button>
+      <h2 id="rpmTitle"></h2>
+      <p id="rpmMeta" class="rpm-meta"></p>
+      <p id="rpmInterests" class="rpm-interests"></p>
+      <div id="rpmHighlights" class="rpm-highlights"></div>
+      <div id="rpmReviews" class="rpm-reviews"></div>
+      <p class="rpm-note">Це маршрут іншого користувача. Щоб побудувати схожий — поверніться до пошуку.</p>
+      <button class="btn-auth primary" onclick="fillSimilarRoute()">Побудувати схожий маршрут</button>
+    </div>
+  </div>
+
+  <!-- Saved Routes Panel -->
+  <div class="saved-panel" id="savedPanel">
+    <div class="saved-panel-title">
+      <span>Збережені маршрути</span>
+      <button class="modal-close" style="position:static" onclick="closeSavedPanel()">✕</button>
+    </div>
+    <div id="savedList"><div style="font-size:0.8rem;color:var(--mist);">Завантаження...</div></div>
+  </div>
+
+  <div id="pageSearch" style="display:none">
+  <section class="hero">
+    <p class="hero-eyebrow">AI Travel Planner</p>
+    <h1>Знайди свій <em>ідеальний</em> маршрут</h1>
+    <p>Веб-застосунок підбере готелі, маршрут по днях, прогноз погоди та транспорт саме для тебе.</p>
+  </section>
+
+  <section class="form-section">
+    <div class="form-panel">
+      <div class="panel-title">Параметри пошуку</div>
+
+      <div class="field">
+        <label>Рівень бюджету</label>
+        <div class="budget-levels">
+          <div class="budget-level-card budget" onclick="selectBudgetLevel('budget')">
+            <div class="blc-icon"><img src="{{ url_for('static', filename='images/budget.png') }}" alt="Бюджетний"></div>
+            <div class="blc-name">Бюджетний</div>
+            <div class="blc-hint">хостели · вулична їжа</div>
+          </div>
+          <div class="budget-level-card mid active" onclick="selectBudgetLevel('mid')">
+            <div class="blc-icon"><img src="{{ url_for('static', filename='images/mid.png') }}" alt="Комфорт"></div>
+            <div class="blc-name">Комфорт</div>
+            <div class="blc-hint">3★ готелі · ресторани</div>
+          </div>
+          <div class="budget-level-card premium" onclick="selectBudgetLevel('premium')">
+            <div class="blc-icon"><img src="{{ url_for('static', filename='images/premium.png') }}" alt="Преміум"></div>
+            <div class="blc-name">Преміум</div>
+            <div class="blc-hint">5★ готелі · fine dining</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Місто відправлення</label>
+        <input type="text" id="departure_city" placeholder="Наприклад: Київ, Варшава, Берлін">
+      </div>
+
+      <div class="field">
+        <label>Бажаний напрямок</label>
+        <input type="text" id="destination" placeholder="Наприклад: Італія, або залиш порожнім">
+      </div>
+
+      <div class="field">
+        <label>Тривалість</label>
+        <input type="text" id="duration" placeholder="Наприклад: 5 днів">
+      </div>
+
+      <div class="field">
+        <label>Мандрівники</label>
+        <div style="display:flex;flex-direction:column;gap:0.7rem;">
+          <div style="display:flex;align-items:center;gap:0.5rem;">
+            <span style="font-size:0.78rem;color:var(--mist);width:80px;flex-shrink:0;">Дорослих</span>
+            <div class="people-stepper">
+              <button class="people-btn" id="peopleDecBtn" onclick="changePeople(-1)" disabled>−</button>
+              <span class="people-count" id="peopleCount">1</span>
+              <button class="people-btn" id="peopleIncBtn" onclick="changePeople(1)">+</button>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:0.5rem;">
+            <span style="font-size:0.78rem;color:var(--mist);width:80px;flex-shrink:0;">Дітей</span>
+            <div class="people-stepper">
+              <button class="people-btn" id="childrenDecBtn" onclick="changeChildren(-1)" disabled>−</button>
+              <span class="people-count" id="childrenCount">0</span>
+              <button class="people-btn" id="childrenIncBtn" onclick="changeChildren(1)">+</button>
+            </div>
+          </div>
+        </div>
+        <input type="hidden" id="num_people" value="1">
+        <input type="hidden" id="num_children" value="0">
+      </div>
+
+      <div class="field">
+        <label>Інтереси</label>
+        <div class="interests-grid">
+          <span class="interest-tag" data-value="їжа">🍽 Їжа</span>
+          <span class="interest-tag" data-value="архітектура">🏛 Архітектура</span>
+          <span class="interest-tag" data-value="природа">🌿 Природа</span>
+          <span class="interest-tag" data-value="культура">🎭 Культура</span>
+          <span class="interest-tag" data-value="пригоди">🧗 Пригоди</span>
+          <span class="interest-tag" data-value="пляж">🏖 Пляж</span>
+          <span class="interest-tag" data-value="шопінг">🛍 Шопінг</span>
+          <span class="interest-tag" data-value="мистецтво">🎨 Мистецтво</span>
+        </div>
+      </div>
+
+      <!-- WEATHER BLOCK -->
+      <div class="field">
+        <label>Погода та дати</label>
+        <div class="weather-toggle">
+          <button class="weather-mode-btn active" id="btnModeDates" onclick="setWeatherMode('dates')">Вибрати дати</button>
+          <button class="weather-mode-btn" id="btnModePrefs" onclick="setWeatherMode('prefs')">Побажання погоди</button>
+        </div>
+
+        <div class="weather-dates visible" id="weatherDates">
+          <div class="date-row">
+            <div>
+              <label style="font-size:0.6rem;">Дата заїзду</label>
+              <input type="date" id="checkin_date">
+            </div>
+            <div>
+              <label style="font-size:0.6rem;">Дата виїзду</label>
+              <input type="date" id="checkout_date">
+            </div>
+          </div>
+        </div>
+
+        <div class="weather-prefs" id="weatherPrefs">
+          <input type="text" id="weather_pref" placeholder="Наприклад: тепло і сонячно, без дощу, хочу сніг...">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Додаткові побажання</label>
+        <textarea id="extra_notes" rows="3" placeholder="Особливі потреби, уникнути чогось, з дітьми..."></textarea>
+      </div>
+
+      <button class="btn-generate" id="generateBtn" onclick="generateRoute()">
+        <span>Згенерувати маршрут</span>
+      </button>
+    </div>
+
+    <div class="quick-routes" id="quickRoutesPanel" style="display:none">
+      <div class="panel-title" id="quickRoutesTitle">Маршрути з бази</div>
+      <div id="quickRoutesList"></div>
+    </div>
+  </section>
+
+  <!-- Date picker step (shown after AI suggests dates for weather-pref mode) -->
+  <div id="datePickerStep" style="display:none; padding: 0 3rem 3rem; max-width: 700px; margin: 0 auto;">
+    <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:2rem;">
+      <div id="dpSuggestionInfo" style="margin-bottom:1.5rem;padding-bottom:1.2rem;border-bottom:1px solid rgba(255,255,255,0.07);">
+        <!-- AI suggestion summary rendered here -->
+      </div>
+      <div id="dpCalendarWrap">
+        <!-- Calendar rendered here -->
+      </div>
+      <div id="dpSelectedDates" style="margin-top:1rem;"></div>
+      <button id="dpGenerateBtn" class="btn-generate" style="display:none;margin-top:1.2rem;" onclick="_doFullGeneration()">
+        <span>Згенерувати маршрут з цими датами</span>
+      </button>
+    </div>
+  </div>
+  </div><!-- /pageSearch -->
+
+  <div id="pageResults" style="display:none">
+  <button class="btn-back" onclick="showPage('search')">← Назад до пошуку</button>
+  <div id="demoBanner" class="demo-banner" style="display:none">
+    <div class="demo-banner-text">Це демо-маршрут. Зареєструйтесь, щоб зберігати та персоналізувати свої маршрути.</div>
+    <button class="btn-auth primary" onclick="showPage('welcome');switchWelcomeTab('register')">Створити акаунт</button>
+  </div>
+  <section class="result-section" id="resultSection">
+    <div class="result-header">
+      <div class="result-label">Персоналізований маршрут</div>
+      <div class="result-title" id="resultTitle">—</div>
+      <div class="result-tagline" id="resultTagline">—</div>
+      <button id="saveRouteBtn" style="display:none;margin-top:1rem;align-items:center;gap:0.5rem;" class="btn-auth" onclick="">
+        Зберегти маршрут
+      </button>
+    </div>
+
+    <div class="meta-badges" id="metaBadges"></div>
+    <div class="ornament">· · · · ·</div>
+
+    <div class="days-layout" id="daysLayout" style="display:none;">
+      <div class="days-tabs" id="daysTabs"></div>
+      <div>
+        <div class="day-detail-panel" id="dayDetailPanel"></div>
+        <div class="day-map-section" id="dayMapSection">
+          <div id="dayMap"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="map-section" id="mapSection" style="display:none;"><div id="routeMap"></div></div>
+
+    <div class="weather-section" id="weatherSection" style="display:none;">
+      <h3 id="weatherTitle">Погода</h3>
+      <div class="weather-subtitle" id="weatherSubtitle"></div>
+      <div id="weatherSummaryBox"></div>
+      <div id="weatherContent"></div>
+    </div>
+
+    <div class="hotels-section" id="hotelsSection" style="display:none;">
+      <div class="panel-title" style="margin-bottom:0.8rem;">Рекомендовані готелі</div>
+      <div id="hotelMeta" style="margin-bottom:1.2rem;"></div>
+      <div class="hotels-grid" id="hotelsGrid"></div>
+    </div>
+
+    <div class="transport-section" id="transportSection" style="display:none;">
+      <div class="panel-title" style="margin-bottom:1.5rem;">Як дістатися</div>
+      <div id="transportContent"></div>
+    </div>
+
+    <div class="extra-info" id="extraInfo"></div>
+    <div class="budget-chart" id="budgetChart"></div>
+    <div class="similar-section" id="similarSection"></div>
+  </section>
+  </div><!-- /pageResults -->
+
+</div><!-- /container -->
+
+<div class="loading-overlay" id="loadingOverlay">
+  <div style="font-size:3.5rem;margin-bottom:1.5rem;animation:spin 3s linear infinite;">🧭</div>
+  <div class="loading-text">Прокладаю маршрут...</div>
+</div>
+
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
