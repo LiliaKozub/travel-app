@@ -2238,6 +2238,7 @@ def generate_route():
 }}
 
 ВАЖЛИВО:
+- Масив "days" повинен містити РІВНО стільки елементів, скільки днів вказано у полі "duration". Якщо duration="4 дні" — у масиві days має бути 4 записи (day 1, day 2, day 3, day 4). Останній день — від'їзд, але він також повинен мати активності (ранкова прогулянка, сувеніри, огляд ще одного місця перед вильотом).
 - Для кожного дня вкажи точні реальні координати lat/lng та 2-3 конкретні реальні ресторани.
 - У transport.local_transport вкажи реальну вартість проїзду в місці призначення: денний/добовий квиток (якщо є) та разовий квиток. Якщо денного квитка немає — day_pass: null.
 - У transport.routes запропонуй 2-4 РІЗНИХ варіанти маршруту з покроковими пересадками (legs).
@@ -2291,8 +2292,7 @@ def generate_route():
             )
 
             dest_city = ai_route.get("destination_city") or ai_route.get("destination", destination)
-            hotels = search_hotels(dest_city, budget, nights, checkin_date or None, checkout_date or None, budget_level) \
-                     if (checkin_date and checkout_date) else []
+            hotels = search_hotels(dest_city, budget, nights, checkin_date or None, checkout_date or None, budget_level)
 
             bd = ai_route.setdefault("budget_detail", {})
             _finalize_budget(bd, hotels, num_people, num_children, nights)
