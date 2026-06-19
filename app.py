@@ -2266,7 +2266,7 @@ def generate_route():
             client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY", ""))
             message = client.chat.completions.create(
                 model="gpt-4o-mini",
-                max_tokens=3500,
+                max_tokens=5000,
                 response_format={"type": "json_object"},
                 messages=[
                     {"role": "system", "content": "Відповідай ТІЛЬКИ валідним JSON. Без markdown, без коментарів, без пояснень."},
